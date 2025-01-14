@@ -1,9 +1,11 @@
 import csv
+import logging
 from urllib.parse import urljoin
 from dataclasses import asdict
 from dataclasses import dataclass
 
 from selenium import webdriver
+from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.chrome.options import Options
@@ -51,7 +53,7 @@ def scrape_page(driver: webdriver.Chrome, url: str, product_page: str) -> list[P
                 (By.ID, "accept-cookies")
             )
         ).click()
-    except:  # noqa E722
+    except TimeoutException:  # noqa E722
         pass
 
     while True:
@@ -62,7 +64,7 @@ def scrape_page(driver: webdriver.Chrome, url: str, product_page: str) -> list[P
                 )
             )
             ActionChains(driver).move_to_element(more_button).click().perform()
-        except: # noqa E722
+        except TimeoutException: # noqa E722
             break
 
     products = []
@@ -77,8 +79,9 @@ def save_to_csv(filename: str, products: list[Product]) -> None:
     with open(filename, mode="w", newline="", encoding="utf-8") as file:
         writer = csv.DictWriter(file, fieldnames=asdict(products[0]).keys())
         writer.writeheader()
-        for product in products:
-            writer.writerow(asdict(product))
+        if products:
+            for product in products:
+                writer.writerow(asdict(product))
 
 
 def get_all_products() -> None:
